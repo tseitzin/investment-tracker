@@ -67,7 +67,7 @@ const fetchTransactions = async () => {
     url += `sortBy=${sortBy.value}&`
     url += `sortOrder=${sortOrder.value}`
 
-    const response = await api.get(url)
+    const response = await api.get<Transaction[]>(url)
     transactions.value = response.data
   } catch (e: any) {
     error.value = e.response?.data?.message || 'Failed to fetch transactions'
@@ -75,7 +75,6 @@ const fetchTransactions = async () => {
     loading.value = false
   }
 }
-
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString()

@@ -1,0 +1,1 @@
+web: cd api && dotnet run --urls http://+:$PORT

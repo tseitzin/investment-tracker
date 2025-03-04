@@ -4,7 +4,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using api.Data;
 using api.Services;
-using Azure.Identity;
 using Microsoft.OpenApi.Models;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -12,6 +11,7 @@ using api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure CORS based on environment
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultPolicy",
@@ -24,37 +24,17 @@ builder.Services.AddCors(options =>
                       .AllowAnyMethod()
                       .AllowCredentials();
             }
-            else if (builder.Environment.IsDevelopment())
-            {
-                policy.WithOrigins("http://10.0.0.12:5173")
-                      .AllowAnyHeader()
-                      .AllowAnyMethod()
-                      .AllowCredentials();
-            }
             else
             {
-                policy.WithOrigins("https://stock-navigator.azurewebsites.net")
+                var clientUrl = Environment.GetEnvironmentVariable("CLIENT_URL") 
+                    ?? builder.Configuration["ClientUrl"];
+                policy.WithOrigins(clientUrl!)
                       .AllowAnyHeader()
                       .AllowAnyMethod()
                       .AllowCredentials();
             }
         });
 });
-
-// if (builder.Environment.IsProduction())
-// {
-try
-{
-    var keyVaultEndpoint = new Uri(builder.Configuration["VaultUri"]!);
-    builder.Configuration.AddAzureKeyVault(keyVaultEndpoint, new DefaultAzureCredential());
-}
-catch (Exception ex)
-{
-    // Log the error but don't throw - this allows the application to start
-    // even if Key Vault is not yet configured
-    Console.WriteLine($"Warning: Could not configure Azure Key Vault: {ex.Message}");
-}
-// }
 
 // Add rate limiting
 builder.Services.AddRateLimiter(options =>
@@ -71,16 +51,6 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// Add Application Insights
-// Add Application Insights only in production
-if (builder.Environment.IsProduction())
-{
-    builder.Services.AddApplicationInsightsTelemetry(options =>
-    {
-        options.ConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
-    });    
-}
-
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -94,7 +64,6 @@ builder.Services.AddSwaggerGen(c =>
         Description = "API for Stock Navigator application"
     });
 
-    // Configure JWT authentication for Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -123,20 +92,28 @@ builder.Services.AddSwaggerGen(c =>
 // Add HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
-// Configure CORS before other middleware
+// Configure database connection
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
+    builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Add DbContext
-// builder.Services.AddDbContext<AppDbContext>(options =>
-//     options.UseSqlite("Data Source=app.db"));
+if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres://"))
+{
+    // Parse Heroku DATABASE_URL
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    
+    connectionString = new StringBuilder()
+        .Append("Host=").Append(uri.Host)
+        .Append(";Database=").Append(uri.AbsolutePath.Trim('/'))
+        .Append(";Username=").Append(userInfo[0])
+        .Append(";Password=").Append(userInfo[1])
+        .Append(";Port=").Append(uri.Port)
+        .Append(";SSL Mode=Require;Trust Server Certificate=True")
+        .ToString();
+}
 
-// Add DbContext with SQL Server
-// builder.Services.AddDbContext<AppDbContext>(options =>
-//     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-    // Add DbContext with PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
         if (builder.Environment.IsProduction())
@@ -149,9 +126,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     });
 });
 
-
-//var jwtKey = builder.Configuration["Jwt:Key"];
 // Configure JWT authentication
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? 
+    builder.Configuration["Jwt:Key"];
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? 
+    builder.Configuration["Jwt:Issuer"];
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? 
+    builder.Configuration["Jwt:Audience"];
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -161,36 +143,38 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
-            ClockSkew = TimeSpan.Zero // Remove default 5 minutes clock skew
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
+            ClockSkew = TimeSpan.Zero
         };
     });
 
-// Add services
+// Register services with proper lifetime
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IKeyVaultService, KeyVaultService>();
 builder.Services.AddScoped<StockSeederService>();
 
-// Add health checks in production
-if (builder.Environment.IsProduction())
+// Add logging
+builder.Services.AddLogging(logging =>
 {
-    builder.Services.AddHealthChecks()
-        .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!);
-}
+    logging.AddConsole();
+    logging.AddDebug();
+});
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Stock Navigator API v1");
-    c.RoutePrefix = "swagger"; // Change from empty string to "swagger"
-});
-
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Stock Navigator API v1");
+        c.RoutePrefix = "swagger";
+    });
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -221,32 +205,10 @@ app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// Add health check endpoint in production
-if (app.Environment.IsProduction())
-{
-    app.MapHealthChecks("/health");
-}
-
 app.MapControllers();
 app.MapFallbackToController("Index", "Fallback");
 
 // Create database and apply migrations
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<AppDbContext>();
-        context.Database.Migrate();
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database.");
-    }
-}
-
-// Initialize database and seed data
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

@@ -2,11 +2,11 @@ import axios from 'axios';
 import { logService } from '../services/logService';
 
 const baseURL = import.meta.env.PROD 
-  ? 'https://stock-navigator.azurewebsites.net/api'
+  ? `${window.location.origin}/api`
   : 'http://localhost:5000/api';
 
 const clientURL = import.meta.env.PROD
-  ? 'https://stock-navigator.azurewebsites.net'
+  ? window.location.origin
   : 'http://localhost:5173'
 
 const api = axios.create({
@@ -26,14 +26,22 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    
+    // Ensure config.headers exists
+    if (!config.headers) {
+      config.headers = {};
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     // Ensure headers are included in preflight requests
     config.headers['Access-Control-Allow-Origin'] = clientURL;
     config.headers['Access-Control-Allow-Credentials'] = 'true';
     config.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
     config.headers['Access-Control-Allow-Headers'] = 'Origin, Content-Type, Accept, Authorization, X-Request-With';
+    
     return config;
   },
   (error) => {

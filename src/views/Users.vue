@@ -5,14 +5,14 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 interface User {
-  id: number;
-  email: string;
-  name: string;
-  isAdmin: boolean;
-  createdDate: string;
-  lastLoginDate: string;
-  numberOfLogins: number;
-  failedLogins: number;
+  id: number
+  email: string
+  name: string
+  isAdmin: boolean
+  createdDate: string
+  lastLoginDate: string
+  numberOfLogins: number
+  failedLogins: number
 }
 
 const users = ref<User[]>([])
@@ -28,7 +28,7 @@ onMounted(async () => {
     router.push('/access-denied')
   }
   try {
-    const response = await api.get('/users')
+    const response = await api.get<User[]>('/users')
     users.value = response.data
   } catch (e) {
     error.value = 'Failed to load users'

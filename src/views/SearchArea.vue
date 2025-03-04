@@ -21,7 +21,6 @@ import { portfolioService } from '../services/portfolioService'
 import { showErrorToast } from '../utils/toast'
 import RemoveFromPortfolioModal from '../components/RemoveFromPortfolioModal.vue'
 
-
 interface MarketSummary {
   totalVolume: number
   averageChange: number
@@ -52,7 +51,6 @@ const showSearchResults = ref(false)
 const isSearchingCompany = ref(false)
 const showRemovePortfolioModal = ref(false)
 
-
 const { showRemoveModal, stockToRemove, confirmRemoval, cancelRemoval } = useStockRemoval()
 
 const { isExpanded: isIntroExpanded, toggleSection: toggleIntro } = 
@@ -67,7 +65,6 @@ onMounted(async () => {
     fetchInitialData(),
     fetchMarketSummary()
   ])
-  
 })
 
 // Cleanup on component unmount
@@ -97,30 +94,30 @@ const handleConfirmRemoval = async () => {
 }
 
 const searchCompanies = async () => {
-    if (!searchQuery.value || searchQuery.value.length < 2) {
-      searchResults.value = []
-      showSearchResults.value = false
-      return
-    }
-
-    isSearchingCompany.value = true
-    try {
-      searchResults.value = await polygonService.searchCompanies(searchQuery.value)
-      showSearchResults.value = true
-    } catch (e) {
-      console.error('Failed to search companies:', e)
-      searchResults.value = []
-    } finally {
-      isSearchingCompany.value = false
-    }
-  }
-
-  const selectCompany = (result: CompanySearchResult) => {
-    searchSymbol.value = result.ticker
-    searchQuery.value = ''
+  if (!searchQuery.value || searchQuery.value.length < 2) {
+    searchResults.value = []
     showSearchResults.value = false
-    searchStock()
+    return
   }
+
+  isSearchingCompany.value = true
+  try {
+    searchResults.value = await polygonService.searchCompanies(searchQuery.value)
+    showSearchResults.value = true
+  } catch (e) {
+    console.error('Failed to search companies:', e)
+    searchResults.value = []
+  } finally {
+    isSearchingCompany.value = false
+  }
+}
+
+const selectCompany = (result: CompanySearchResult) => {
+  searchSymbol.value = result.ticker
+  searchQuery.value = ''
+  showSearchResults.value = false
+  searchStock()
+}
 
 const fetchInitialData = async () => {
   loading.value = true
@@ -147,22 +144,21 @@ const fetchInitialData = async () => {
 }
 
 // Add helper function to get ownership info
-  const getOwnershipInfo = (symbol: string) => {
-    const owned = ownedStocks.value.find(stock => stock.symbol === symbol)
-    if (!owned) return null
-    
-    return {
-      shares: owned.quantity,
-      value: owned.quantity * owned.averagePurchasePrice
-    }
+const getOwnershipInfo = (symbol: string) => {
+  const owned = ownedStocks.value.find(stock => stock.symbol === symbol)
+  if (!owned) return null
+  
+  return {
+    shares: owned.quantity,
+    value: owned.quantity * owned.averagePurchasePrice
   }
-
+}
 
 const fetchMarketSummary = async () => {
   marketLoading.value = true
   error.value = ''
   try {
-    const response = await api.get('/stockdata/summary')
+    const response = await api.get<MarketSummary>('/stockdata/summary')
     marketSummary.value = response.data
   } catch (e: any) {
     error.value = 'Failed to load market summary'
@@ -185,12 +181,12 @@ const searchStock = async () => {
     searchHistoryStore.addToHistory(stock) 
 
     await logger.info('Stock search result returned', {
-        symbol: selectedStock.value.symbol,
-        price: selectedStock.value.price,
-        companyName: selectedStock.value.companyName,
-        volume: selectedStock.value.volume,
-        dateTime: new Date().toISOString()
-      })
+      symbol: selectedStock.value.symbol,
+      price: selectedStock.value.price,
+      companyName: selectedStock.value.companyName,
+      volume: selectedStock.value.volume,
+      dateTime: new Date().toISOString()
+    })
   } catch (e: any) {
     error.value = currentStock + ' is not a valid symbol or is currently unavailable and cannot be used in your analysis.'
     selectedStock.value = null
@@ -228,7 +224,6 @@ const toggleSavedStock = async (symbol: string) => {
       await logger.info('Stock removed from watchlist', {
         symbol: symbol,
         dateTime: new Date().toISOString()
-
       })
     } else if (selectedStock.value) {
       await stockService.saveStock(selectedStock.value)
@@ -237,7 +232,6 @@ const toggleSavedStock = async (symbol: string) => {
       await logger.info('Stock added to watchlist', {
         symbol: symbol,
         dateTime: new Date().toISOString()
-
       })
     }
   } catch (e: any) {
@@ -267,7 +261,6 @@ const fetchSavedStocks = async () => {
     const stocks = await stockService.getSavedStocks()
     savedStocks.value = stocks
     
-    
     // Start auto-refresh after initial fetch
     searchAreaService.startAutoRefresh(stocks, (updatedStocks) => {
       savedStocks.value = updatedStocks
@@ -281,7 +274,6 @@ const handlePortfolioSuccess = async () => {
   // Refresh data after successful portfolio update
   await fetchSavedStocks()
 }
-
 
 const openPortfolioModal = (stock: StockData) => {
   selectedStockForPortfolio.value = stock
@@ -303,7 +295,6 @@ const closeRemovePortfolioModal = () => {
   showRemovePortfolioModal.value = false
   selectedStockForPortfolio.value = null
 }
-
 </script>
 
 <template>
@@ -502,27 +493,20 @@ const closeRemovePortfolioModal = () => {
 
         <!-- Stock Details Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Current Price -->
           <div class="bg-gray-100 p-2 rounded-lg">
             <p class="text-sm text-gray-500">Current Price</p>
             <p class="text-lg font-semibold">{{ formatCurrency(stock.price) }}</p>
           </div>
-
-          <!-- Today's Change -->
           <div class="bg-gray-100 p-2 rounded-lg">
             <p class="text-sm text-gray-500">Today's Change</p>
             <p :class="['text-lg font-semibold', stock.change >= 0 ? 'text-green-600' : 'text-red-600']">
               {{ formatChange(stock.change, stock.changePercent) }}
             </p>
           </div>
-
-          <!-- Volume -->
           <div class="bg-gray-100 p-2 rounded-lg">
             <p class="text-sm text-gray-500">Volume</p>
             <p class="text-lg font-semibold">{{ formatNumber(stock.volume) }}</p>
           </div>
-
-          <!-- Previous Close -->
           <div class="bg-gray-100 p-2 rounded-lg">
             <p class="text-sm text-gray-500">Previous Close</p>
             <p class="text-lg font-semibold">{{ formatCurrency(stock.previousClose || 0) }}</p>
@@ -531,19 +515,14 @@ const closeRemovePortfolioModal = () => {
 
         <!-- Additional Details Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-          <!-- Open -->
           <div class="bg-gray-100 p-2 rounded-lg">
             <p class="text-sm text-gray-500">Open</p>
             <p class="text-lg font-semibold">{{ stock.open ? formatCurrency(stock.open) : 'N/A' }}</p>
           </div>
-
-          <!-- High -->
           <div class="bg-gray-100 p-2 rounded-lg">
             <p class="text-sm text-gray-500">High</p>
             <p class="text-lg font-semibold">{{ stock.high ? formatCurrency(stock.high) : 'N/A' }}</p>
           </div>
-
-          <!-- Low -->
           <div class="bg-gray-100 p-2 rounded-lg">
             <p class="text-sm text-gray-500">Low</p>
             <p class="text-lg font-semibold">{{ stock.low ? formatCurrency(stock.low) : 'N/A' }}</p>
@@ -551,33 +530,31 @@ const closeRemovePortfolioModal = () => {
         </div>
 
         <div 
-              v-if="getOwnershipInfo(stock.symbol)"
-              class="mt-4 bg-blue-50 p-3 rounded-lg"
-            >
-              <div class="flex">
-                <div>
-                  <span class="font-medium text-blue-800">Number in Portfolio:</span>
-                  <span class="ml-2 text-blue-700">
-                    {{ formatNumber(getOwnershipInfo(stock.symbol)?.shares || 0) }} shares
-                  </span>
-                </div>
-                <div>
-                  <span class="font-medium text-blue-800 ml-6">Total Value:</span>
-                  <span class="ml-2 text-blue-700">
-                    {{ formatCurrency((getOwnershipInfo(stock.symbol)?.value || 0)) }}
-                  </span>
-                </div>
-              </div>
+          v-if="getOwnershipInfo(stock.symbol)"
+          class="mt-4 bg-blue-50 p-3 rounded-lg"
+        >
+          <div class="flex">
+            <div>
+              <span class="font-medium text-blue-800">Number in Portfolio:</span>
+              <span class="ml-2 text-blue-700">
+                {{ formatNumber(getOwnershipInfo(stock.symbol)?.shares || 0) }} shares
+              </span>
             </div>
-            <div 
-              v-else 
-              class="mt-4 bg-gray-50 p-3 rounded-lg"
-            >
-              <p class="font-semibold text-gray-600">Not currently in portfolio</p>
+            <div>
+              <span class="font-medium text-blue-800 ml-6">Total Value:</span>
+              <span class="ml-2 text-blue-700">
+                {{ formatCurrency((getOwnershipInfo(stock.symbol)?.value || 0)) }}
+              </span>
             </div>
+          </div>
+        </div>
+        <div 
+          v-else 
+          class="mt-4 bg-gray-50 p-3 rounded-lg"
+        >
+          <p class="font-semibold text-gray-600">Not currently in portfolio</p>
+        </div>
       </div>
-
-      
     </div>
   </div>
 

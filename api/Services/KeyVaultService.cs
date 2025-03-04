@@ -1,34 +1,40 @@
-using Azure.Security.KeyVault.Secrets;
-using Azure.Identity;
-
 namespace api.Services;
 
 public class KeyVaultService : IKeyVaultService
 {
-    private readonly SecretClient _secretClient;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<KeyVaultService> _logger;
 
-    public KeyVaultService(IConfiguration configuration)
+    public KeyVaultService(IConfiguration configuration, ILogger<KeyVaultService> logger)
     {
-        var vaultUri = configuration["VaultUri"];
-        if (string.IsNullOrEmpty(vaultUri))
-        {
-            throw new InvalidOperationException("VaultUri configuration is missing");
-        }
-
-        _secretClient = new SecretClient(new Uri(vaultUri), new DefaultAzureCredential());
+        _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<string?> GetSecretAsync(string secretName)
     {
         try
         {
-            var secret = await _secretClient.GetSecretAsync(secretName);
-            return secret.Value?.Value;
+            // Use Task.FromResult since we're not doing any actual async work
+            return await Task.FromResult(GetSecretValue(secretName));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Log the error but don't expose details
+            _logger.LogError(ex, "Error retrieving secret {SecretName}", secretName);
             return null;
         }
+    }
+
+    private string? GetSecretValue(string secretName)
+    {
+        // First try to get from environment variables
+        var envValue = Environment.GetEnvironmentVariable(secretName.ToUpper());
+        if (!string.IsNullOrEmpty(envValue))
+        {
+            return envValue;
+        }
+
+        // Fallback to configuration if environment variable not found
+        return _configuration[secretName];
     }
 }
