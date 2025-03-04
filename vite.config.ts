@@ -18,7 +18,17 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5173,
-    host: true
+    port: Number(process.env.PORT) || 5173,
+    host: true,
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_URL || 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
+  },
+  define: {
+    'process.env.VITE_POLYGON_API_KEY': JSON.stringify(process.env.VITE_POLYGON_API_KEY)
   }
 })

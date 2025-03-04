@@ -16,25 +16,12 @@ public class SecretsController : ControllerBase
         _keyVaultService = keyVaultService;
     }
 
-    [HttpGet("test")]
-    public async Task<IActionResult> GetTestSecret()
-    {
-        var secret = await _keyVaultService.GetSecretAsync("SmtpFromEmail");
-        
-        if (secret == null)
-        {
-            return NotFound("Secret not found");
-        }
-
-        return Ok(new { value = secret });
-    }
-
     [HttpGet("polygon-api-key")]
     public async Task<IActionResult> GetPolygonApiKey()
     {
         var apiKey = await _keyVaultService.GetSecretAsync("PolygonApiKey");
         
-        if (apiKey == null)
+        if (string.IsNullOrEmpty(apiKey))
         {
             return NotFound("API key not found");
         }

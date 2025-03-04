@@ -1,4 +1,3 @@
-using Azure.Security.KeyVault.Secrets;
 
 namespace api.Services;
 

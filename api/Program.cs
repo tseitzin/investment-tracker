@@ -11,7 +11,6 @@ using api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure CORS based on environment
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultPolicy",
@@ -24,11 +23,16 @@ builder.Services.AddCors(options =>
                       .AllowAnyMethod()
                       .AllowCredentials();
             }
+            else if (builder.Environment.IsDevelopment())
+            {
+                policy.WithOrigins("http://10.0.0.23:5173")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+            }
             else
             {
-                var clientUrl = Environment.GetEnvironmentVariable("CLIENT_URL") 
-                    ?? builder.Configuration["ClientUrl"];
-                policy.WithOrigins(clientUrl!)
+                policy.WithOrigins("https://stock-navigator.azurewebsites.net")
                       .AllowAnyHeader()
                       .AllowAnyMethod()
                       .AllowCredentials();
@@ -149,6 +153,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
     });
+
+// Add configuration
+builder.Configuration.AddEnvironmentVariables();
 
 // Register services with proper lifetime
 builder.Services.AddScoped<IAuthService, AuthService>();

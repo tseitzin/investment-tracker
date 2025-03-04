@@ -1,7 +1,5 @@
-// api/Controllers/LogsController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
 namespace api.Controllers;
 
@@ -11,47 +9,32 @@ namespace api.Controllers;
 public class LogsController : ControllerBase
 {
     private readonly ILogger<LogsController> _logger;
-    private readonly string _logPath;
 
-    public LogsController(ILogger<LogsController> logger, IWebHostEnvironment env)
+    public LogsController(ILogger<LogsController> logger)
     {
         _logger = logger;
-        _logPath = Path.Combine(env.ContentRootPath, "logs");
-        
-        if (!Directory.Exists(_logPath))
-        {
-            Directory.CreateDirectory(_logPath);
-        }
     }
 
     [HttpPost]
-    public async Task<IActionResult> LogEntry([FromBody] LogEntry entry)
+    public IActionResult LogEntry([FromBody] LogEntry entry)
     {
-        var logFileName = $"app-{DateTime.UtcNow:yyyy-MM-dd}.log";
-        var logFilePath = Path.Combine(_logPath, logFileName);
-
-        var logLine = JsonSerializer.Serialize(new {
-            timestamp = entry.Timestamp,
-            level = entry.Level.ToUpper(),
-            message = entry.Message,
-            context = entry.Context,
-            error = entry.Error,
-            user = User.Identity?.Name
-        });
-
-        try
+        var logLevel = entry.Level.ToUpper() switch
         {
-            await System.IO.File.AppendAllTextAsync(
-                logFilePath, 
-                $"{logLine}{Environment.NewLine}"
-            );
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to write to log file");
-            return StatusCode(500, "Failed to write log entry");
-        }
+            "ERROR" => LogLevel.Error,
+            "WARN" => LogLevel.Warning,
+            "INFO" => LogLevel.Information,
+            _ => LogLevel.Information
+        };
+
+        _logger.Log(
+            logLevel,
+            "Client Log: {Message}. Context: {@Context}. Error: {@Error}",
+            entry.Message,
+            entry.Context,
+            entry.Error
+        );
+
+        return Ok();
     }
 }
 
@@ -59,7 +42,7 @@ public class LogEntry
 {
     public string Level { get; set; } = "info";
     public string Message { get; set; } = "";
-    public string Timestamp { get; set; } = DateTime.UtcNow.ToString("O");
+    public string? Timestamp { get; set; }
     public object? Context { get; set; }
     public object? Error { get; set; }
 }
