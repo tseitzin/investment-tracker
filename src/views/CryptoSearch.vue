@@ -370,8 +370,8 @@ const cancelRemoval = () => {
                 <div class="bg-gray-100 p-2 rounded-lg">
                   <p class="text-sm text-gray-500">Current Price</p>
                   <p class="text-lg font-semibold" :class="{
-                    'text-green-600': cryptoPrices.get(crypto.symbol) > Number(crypto.price),
-                    'text-red-600': cryptoPrices.get(crypto.symbol) < Number(crypto.price)
+                    'text-green-600': (cryptoPrices.get(crypto.symbol) ?? 0) > Number(crypto.price),
+                    'text-red-600': (cryptoPrices.get(crypto.symbol) ?? 0) < Number(crypto.price)
                   }">
                     {{ formatCurrency(cryptoPrices.get(crypto.symbol) ?? Number(crypto.price)) }}
                   </p>
