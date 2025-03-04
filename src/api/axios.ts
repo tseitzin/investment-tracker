@@ -29,7 +29,7 @@ api.interceptors.request.use(
     
     // Ensure config.headers exists
     if (!config.headers) {
-      config.headers = {};
+      config.headers = new axios.AxiosHeaders();
     }
     
     if (token) {

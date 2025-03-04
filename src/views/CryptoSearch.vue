@@ -411,13 +411,13 @@ const cancelRemoval = () => {
                   <div>
                     <span class="font-medium text-blue-800">Amount in Portfolio:</span>
                     <span class="ml-2 text-blue-700">
-                      {{ formatNumber(getOwnershipInfo(crypto.symbol)?.quantity || 0) }} {{ crypto.symbol }}
+                      {{ formatNumber(getOwnershipInfo(crypto.symbol)?.quantity ?? 0) }} {{ crypto.symbol }}
                     </span>
                   </div>
                   <div>
                     <span class="font-medium text-blue-800 ml-6">Total Value:</span>
                     <span class="ml-2 text-blue-700">
-                      {{ formatCurrency((getOwnershipInfo(crypto.symbol)?.value || 0)) }}
+                      {{ formatCurrency((getOwnershipInfo(crypto.symbol)?.value ?? 0)) }}
                     </span>
                   </div>
                 </div>
@@ -426,8 +426,6 @@ const cancelRemoval = () => {
           </div>
         </div>
       </div>
-
-      
 
       <!-- No Saved Cryptos Message -->
       <div v-else class="mt-6 bg-white rounded-lg shadow-md p-4 sm:p-8 text-center">
