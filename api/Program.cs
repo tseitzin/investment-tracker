@@ -11,6 +11,10 @@ using api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+var url = $"http://+:{port}";
+builder.WebHost.UseUrls(url);
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultPolicy",
