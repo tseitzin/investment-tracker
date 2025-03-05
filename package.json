@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "start": "npm run serve",
-    "build": "vue-cli-service build --dest ../api/wwwroot",
+    "build": "vue-tsc && vite build --outDir ./api/wwwroot",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
