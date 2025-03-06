@@ -15,7 +15,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "coverage": "vitest run --coverage",
-    "heroku-postbuild": "npm run build"
+    "heroku-postbuild": "npm run build && npm run postinstall",
+    "postinstall": "npm install --prefix ./api"
   },
   "dependencies": {
     "@coinbase/coinbase-sdk": "^0.11.3",
