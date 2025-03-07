@@ -7,6 +7,14 @@ EXPOSE 443
 # Use the official .NET SDK image for building the application
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
+
+# Copy and build the Vue.js frontend
+COPY ["package.json", "package-lock.json", "./"]
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Copy the .NET project files and restore dependencies
 COPY ["api/api.csproj", "api/"]
 RUN dotnet restore "api/api.csproj"
 COPY . .
@@ -20,4 +28,5 @@ RUN dotnet publish "api.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY --from=build /src/api/wwwroot ./wwwroot
 ENTRYPOINT ["dotnet", "api.dll"]
