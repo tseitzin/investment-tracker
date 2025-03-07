@@ -1,2 +1,2 @@
-release: cd src && npm install && npm run build
-web: cd api && ASPNETCORE_URLS=http://+:$PORT dotnet api.dll
+release: NODE_ENV=production npm install && npm run build
+web: cd api && dotnet run --urls http://+:$PORT
