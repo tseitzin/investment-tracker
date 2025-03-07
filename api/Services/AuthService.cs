@@ -6,6 +6,7 @@ using api.Data;
 using api.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Logging;
 
 namespace api.Services;
 
@@ -15,88 +16,109 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly IHttpContextAccessor _httpContextAccessor;
-
+    private readonly ILogger<AuthService> _logger;
+    private readonly string _jwtSecretKey;
 
     public AuthService(AppDbContext context, IConfiguration configuration, 
-        IEmailService emailService, IHttpContextAccessor httpContextAccessor)
+        IEmailService emailService, IHttpContextAccessor httpContextAccessor,
+        ILogger<AuthService> logger)
     {
         _context = context;
         _configuration = configuration;
         _emailService = emailService;
         _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
+        _jwtSecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+            ?? throw new ArgumentNullException("JWT_SECRET_KEY", "JWT secret key is not configured.");
     }
 
     public async Task<AuthResponse> RegisterAsync(AuthRequest request)
     {
-        if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+        try
         {
-            await LogAuthEvent(request.Email, false, "Email already exists", "Registration Failed");
-            throw new InvalidOperationException("User already exists");
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            {
+                await LogAuthEvent(request.Email, false, "Email already exists", "Registration Failed");
+                throw new InvalidOperationException("User already exists");
+            }
+
+            var user = new User
+            {
+                Email = request.Email,
+                Name = request.Name,
+                PasswordHash = HashPassword(request.Password),
+                IsAdmin = false,
+                CreatedDate = DateTime.UtcNow,
+                LastLoginDate = DateTime.UtcNow
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            await LogAuthEvent(request.Email, true, null, "Registration Success");
+
+            return new AuthResponse
+            {
+                Token = GenerateJwtToken(user),
+                Email = user.Email,
+                Name = user.Name,
+                IsAdmin = user.IsAdmin
+            };
         }
-
-        var user = new User
+        catch (Exception ex)
         {
-            Email = request.Email,
-            Name = request.Name,
-            PasswordHash = HashPassword(request.Password),
-            IsAdmin = false,
-            CreatedDate = DateTime.UtcNow,
-            LastLoginDate = DateTime.UtcNow
-        };
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        await LogAuthEvent(request.Email, true, null, "Registration Success");
-
-        return new AuthResponse
-        {
-            Token = GenerateJwtToken(user),
-            Email = user.Email,
-            Name = user.Name,
-            IsAdmin = user.IsAdmin
-        };
+            _logger.LogError(ex, "Error occurred during registration.");
+            throw;
+        }
     }
 
     public async Task<AuthResponse> LoginAsync(AuthRequest request)
     {
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == request.Email);
-
-        if (user == null)
+        try
         {
-            await LogAuthEvent(request.Email, false, "User not found", "Login Failed");
-            throw new InvalidOperationException("Invalid credentials");
-        }
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
-        if (!VerifyPassword(request.Password, user.PasswordHash))
-        {
-            await LogAuthEvent(request.Email, false, "Invalid password", "Login Failed");
-            user.FailedLogins++;
+            if (user == null)
+            {
+                await LogAuthEvent(request.Email, false, "User not found", "Login Failed");
+                throw new InvalidOperationException("Invalid credentials");
+            }
+
+            if (!VerifyPassword(request.Password, user.PasswordHash))
+            {
+                await LogAuthEvent(request.Email, false, "Invalid password", "Login Failed");
+                user.FailedLogins++;
+                await _context.SaveChangesAsync();
+                throw new InvalidOperationException("Invalid credentials");
+            }
+
+            user.PreviousLoginDate = user.LastLoginDate;
+            user.LastLoginDate = DateTime.UtcNow;
+            user.NumberOfLogins++;
             await _context.SaveChangesAsync();
-            throw new InvalidOperationException("Invalid credentials");
+
+            await LogAuthEvent(request.Email, true, null, "Login Success");
+
+            return new AuthResponse
+            {
+                Token = GenerateJwtToken(user),
+                Email = user.Email,
+                Name = user.Name,
+                IsAdmin = user.IsAdmin,
+                LastLoginDate = user.LastLoginDate, // Use ISO 8601 format
+                PreviousLoginDate = user.PreviousLoginDate,
+                CreatedDate = user.CreatedDate,
+                NumberOfLogins = user.NumberOfLogins,
+                FailedLogins = user.FailedLogins
+
+            };
         }
-
-        user.PreviousLoginDate = user.LastLoginDate;
-        user.LastLoginDate = DateTime.UtcNow;
-        user.NumberOfLogins++;
-        await _context.SaveChangesAsync();
-
-        await LogAuthEvent(request.Email, true, null, "Login Success");
-
-        return new AuthResponse
+        catch (Exception ex)
         {
-            Token = GenerateJwtToken(user),
-            Email = user.Email,
-            Name = user.Name,
-            IsAdmin = user.IsAdmin,
-            LastLoginDate = user.LastLoginDate, // Use ISO 8601 format
-            PreviousLoginDate = user.PreviousLoginDate,
-            CreatedDate = user.CreatedDate,
-            NumberOfLogins = user.NumberOfLogins,
-            FailedLogins = user.FailedLogins
-
-        };
+            _logger.LogError(ex, "Error occurred during login.");
+            throw;
+        }
     }
 
     public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -185,7 +207,7 @@ public class AuthService : IAuthService
 
     private string GenerateJwtToken(User user)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
