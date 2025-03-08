@@ -29,7 +29,7 @@ public class AuthService : IAuthService
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
         _jwtSecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
-            ?? throw new ArgumentNullException("JWT_SECRET_KEY", "JWT secret key is not configured.");
+            ?? throw new InvalidOperationException("JWT secret key is not configured in environment variables.");
     }
 
     public async Task<AuthResponse> RegisterAsync(AuthRequest request)
