@@ -3,8 +3,8 @@
     <!-- Hero Section -->
     <div class="container mx-auto px-4 py-12">
       <div class="text-center mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-          Welcome to the Financial Navigator
+        <h1 class="text-2xl md:text-4xl font-semibold text-gray-900 mb-6">
+          Welcome to the Investment Tracker Pro
         </h1>
         <p class="text-xl text-gray-700 max-w-3xl mx-auto mb-8">
           Your comprehensive platform for tracking stocks and cryptocurrencies, managing portfolios, 
