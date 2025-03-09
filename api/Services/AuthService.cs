@@ -17,7 +17,7 @@ public class AuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<AuthService> _logger;
-    private readonly string _jwtSecretKey;
+    //private readonly string _jwtSecretKey;
 
     public AuthService(AppDbContext context, IConfiguration configuration, 
         IEmailService emailService, IHttpContextAccessor httpContextAccessor,
@@ -28,8 +28,8 @@ public class AuthService : IAuthService
         _emailService = emailService;
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
-        _jwtSecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
-            ?? throw new InvalidOperationException("JWT secret key is not configured in environment variables.");
+        //_jwtSecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+        //    ?? throw new InvalidOperationException("JWT secret key is not configured in environment variables.");
     }
 
     public async Task<AuthResponse> RegisterAsync(AuthRequest request)
@@ -207,7 +207,8 @@ public class AuthService : IAuthService
 
     private string GenerateJwtToken(User user)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
