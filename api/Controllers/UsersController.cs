@@ -5,10 +5,12 @@ using api.Data;
 using api.Models;
 using api.Services;
 using System.Security.Claims;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace api.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
@@ -25,21 +27,20 @@ public class UsersController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
     {
-        var users = await _context.Users
-            .Select(u => new UserDto
-            {
-                Id = u.Id,
-                Email = u.Email,
-                Name = u.Name,
-                IsAdmin = u.IsAdmin,
-                CreatedDate = u.CreatedDate,
-                LastLoginDate = u.LastLoginDate,
-                NumberOfLogins = u.NumberOfLogins,
-                FailedLogins = u.FailedLogins
-            })
-            .ToListAsync();
+        var users = await _context.Users.ToListAsync();
+        var userDtos = users.Select(u => new UserDto
+        {
+            Id = u.Id,
+            Email = u.Email,
+            Name = u.Name,
+            IsAdmin = u.IsAdmin,
+            CreatedDate = u.CreatedDate ?? DateTime.MinValue,
+            LastLoginDate = u.LastLoginDate ?? DateTime.MinValue,
+            NumberOfLogins = u.NumberOfLogins,
+            FailedLogins = u.FailedLogins
+        }).ToList();
 
-        return Ok(users);
+        return Ok(userDtos);
     }
 
     [HttpPost("update-password")]

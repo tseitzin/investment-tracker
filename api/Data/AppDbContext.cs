@@ -8,19 +8,19 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
+        // DbSet properties will be initialized by EF Core
     }
 
-    public required DbSet<User> Users { get; set; }
-    public required DbSet<AuditLog> AuditLogs { get; set; }
-    public required DbSet<StockData> StockData { get; set; }
-    public required DbSet<UserOwnedStock> UserOwnedStocks { get; set; }
-    public required DbSet<UserSavedStock> UserSavedStocks { get; set; }
-    public required DbSet<UserSavedCrypto> UserSavedCryptos { get; set; }
-    public required DbSet<MarketMover> MarketMovers { get; set; }
-    public required DbSet<Portfolio> Portfolios { get; set; }
-    public required DbSet<Transaction> Transactions { get; set; }
-    public required DbSet<CryptoPortfolio> CryptoPortfolios { get; set; }
-
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+    public DbSet<StockData> StockData { get; set; } = null!;
+    public DbSet<UserOwnedStock> UserOwnedStocks { get; set; } = null!;
+    public DbSet<UserSavedStock> UserSavedStocks { get; set; } = null!;
+    public DbSet<UserSavedCrypto> UserSavedCryptos { get; set; } = null!;
+    public DbSet<MarketMover> MarketMovers { get; set; } = null!;
+    public DbSet<Portfolio> Portfolios { get; set; } = null!;
+    public DbSet<Transaction> Transactions { get; set; } = null!;
+    public DbSet<CryptoPortfolio> CryptoPortfolios { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
