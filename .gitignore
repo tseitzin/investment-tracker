@@ -15,6 +15,10 @@ coverage/
 node_modules
 api/obj/Debug/
 api/bin/
+api.test/obj/Debug/
+api.test/bin/
+api.test/coverage/
+api.test/node_modules/
 dist-ssr
 *.local
 
