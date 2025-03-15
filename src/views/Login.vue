@@ -36,7 +36,7 @@ const handleSubmit = async () => {
       <!-- Logo and Welcome Message -->
       <div class="text-center">
         <!-- <img src="/logo.png" alt="Stock Navigator Logo" class="mx-auto h-12 w-12" /> -->
-        <h2 class="text-3xl font-bold text-gray-900 mt-4">Login to Stock Navigator</h2>
+        <h2 class="text-2xl font-semibold text-gray-900 mt-4">Login to Investment Tracker Pro</h2>
         <p class="text-sm text-gray-600 mt-2">
           Discover insights, stay informed, and make smarter investment decisions.
         </p>
@@ -96,7 +96,7 @@ const handleSubmit = async () => {
 
       <!-- Sign-Up Prompt for New Users -->
       <p class="text-center text-sm text-gray-600">
-        New to Stock Navigator?
+        New to Investment Tracker Pro?
         <router-link to="/register" class="font-medium text-indigo-600 hover:text-indigo-500">
           Create an account
         </router-link>
