@@ -1,0 +1,17 @@
+{
+  "name": "investment-tracker",
+  "description": "Investment tracking application",
+  "buildpacks": [
+    {
+      "url": "https://github.com/jincod/dotnetcore-buildpack"
+    },
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "ASPNETCORE_ENVIRONMENT": {
+      "value": "Production"
+    }
+  }
+}
