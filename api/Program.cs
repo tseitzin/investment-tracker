@@ -36,7 +36,7 @@ builder.Services.AddCors(options =>
             }
             else
             {
-                policy.WithOrigins("https://stock-navigator.azurewebsites.net")
+                policy.WithOrigins("https://investment-tracker-eee77bc323da.herokuapp.com")
                       .AllowAnyHeader()
                       .AllowAnyMethod()
                       .AllowCredentials();
@@ -218,6 +218,8 @@ app.UseStaticFiles();
 
 app.MapControllers();
 app.MapFallbackToController("Index", "Fallback");
+
+app.MapControllers();
 
 // Create database and apply migrations
 using (var scope = app.Services.CreateScope())
