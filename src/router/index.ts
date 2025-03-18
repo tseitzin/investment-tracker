@@ -116,12 +116,11 @@ const router = createRouter({
     {
       path: '/reset-password',
       name: 'reset-password',
-      component: ResetPassword
-    },
-    // Catch-all route for 404
-    {
-      path: '/:pathMatch(.*)*',
-      redirect: '/'
+      component: ResetPassword,
+      props: (route) => ({ 
+        token: route.query.token,
+        email: route.query.email 
+      })
     }
   ],
   scrollBehavior(){
@@ -136,6 +135,16 @@ router.beforeEach(async (to, _from, next) => {
   // Initialize auth state if not already done
   if (!isAuthenticated.value) {
     authStore.initializeAuth()
+  }
+
+  // Special handling for reset password route
+  if (to.name === 'reset-password') {
+    if (!to.query.token || !to.query.email) {
+      next('/forgot-password')
+    } else {
+      next()
+    }
+    return
   }
 
   if (to.meta.requiresAuth && !isAuthenticated.value) {

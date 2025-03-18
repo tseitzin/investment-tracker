@@ -15,7 +15,8 @@ const email = route.query.email as string
 
 onMounted(() => {
   if (!token || !email) {
-    error.value = 'Invalid or missing reset token'
+    router.push('/forgot-password')
+    return
   }
 })
 
@@ -57,7 +58,7 @@ const handleSubmit = async () => {
         </h2>
       </div>
       
-      <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
+      <form v-if="token && email" class="mt-8 space-y-6" @submit.prevent="handleSubmit">
         <div class="rounded-md shadow-sm -space-y-px">
           <div>
             <label for="new-password" class="sr-only">New Password</label>
@@ -96,6 +97,16 @@ const handleSubmit = async () => {
 
       <div v-if="error" class="mt-2 text-center text-sm text-red-600">
         {{ error }}
+      </div>
+
+      <div v-if="!token || !email" class="text-center">
+        <p class="text-red-600 mb-4">Invalid or expired reset password link.</p>
+        <router-link 
+          to="/forgot-password" 
+          class="text-indigo-600 hover:text-indigo-500"
+        >
+          Request a new password reset
+        </router-link>
       </div>
     </div>
   </div>
