@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using api.Middleware;
+using Microsoft.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -214,12 +215,24 @@ app.UseAuthorization();
 
 // Serve static files and enable default files
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// Configure static files with caching options
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Do not cache index.html
+        if (ctx.File.Name == "index.html")
+        {
+            ctx.Context.Response.Headers[HeaderNames.CacheControl] = "no-cache, no-store, must-revalidate";
+            ctx.Context.Response.Headers[HeaderNames.Pragma] = "no-cache";
+            ctx.Context.Response.Headers[HeaderNames.Expires] = "0";
+        }
+    }
+});
 
 app.MapControllers();
 app.MapFallbackToController("Index", "Fallback");
 
-app.MapControllers();
 
 // Create database and apply migrations
 using (var scope = app.Services.CreateScope())
