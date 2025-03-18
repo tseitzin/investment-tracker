@@ -15,13 +15,18 @@ const email = route.query.email as string
 
 onMounted(() => {
   if (!token || !email) {
-    router.push('/login')
+    error.value = 'Invalid or missing reset token'
   }
 })
 
 const handleSubmit = async () => {
   if (newPassword.value !== confirmPassword.value) {
     error.value = 'Passwords do not match'
+    return
+  }
+
+  if (newPassword.value.length < 6) {
+    error.value = 'Password must be at least 6 characters long'
     return
   }
 

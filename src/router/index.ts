@@ -117,6 +117,11 @@ const router = createRouter({
       path: '/reset-password',
       name: 'reset-password',
       component: ResetPassword
+    },
+    // Catch-all route for 404
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
     }
   ],
   scrollBehavior(){
