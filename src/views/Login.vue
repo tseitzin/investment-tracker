@@ -11,20 +11,51 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 const successMessage = ref('')
+const showError = ref(false)
+const errorMessage = ref('')
+let errorTimeout: number | null = null
 
 onMounted(() => {
+  // Clear any existing errors
+  error.value = ''
+  
   if (route.query.reset === 'success') {
     successMessage.value = 'Password has been reset successfully. Please login with your new password.'
   }
+  
+  // Make sure to clear any existing timeouts
+  if (errorTimeout) {
+    clearTimeout(errorTimeout)
+  }
 })
+
+const displayError = (message: string) => {
+  // Clear any existing timeout
+  if (errorTimeout) {
+    clearTimeout(errorTimeout)
+  }
+  
+  // Set error message and show it
+  errorMessage.value = message
+  showError.value = true
+  
+  // This error won't auto-clear - user must take action
+  console.log('Displaying error:', message)
+}
 
 const handleSubmit = async () => {
   try {
     await auth.login(email.value, password.value)
     router.push('/landing')
   } catch (e) {
-    error.value = 'Invalid credentials'
+    console.log('Login error:', e)
+    displayError('Invalid credentials')
   }
+}
+
+// Only clear error when user takes action
+const handleInput = () => {
+  showError.value = false
 }
 </script>
 
@@ -42,6 +73,16 @@ const handleSubmit = async () => {
         </p>
       </div>
 
+      <!-- Display Success Message -->
+      <p v-if="successMessage" class="mt-2 text-center text-sm text-green-600">
+        {{ successMessage }}
+      </p>
+
+      <!-- Custom Error Alert that Won't Auto-Clear -->
+      <div v-if="showError" class="p-3 bg-red-100 border border-red-400 text-red-700 rounded relative" role="alert">
+        <span class="block sm:inline">{{ errorMessage }}</span>
+      </div>
+
       <!-- Login Form -->
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
         <div class="rounded-md shadow-sm -space-y-px">
@@ -52,6 +93,7 @@ const handleSubmit = async () => {
               v-model="email"
               type="email"
               required
+              @input="handleInput"
               class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Email address"
             />
@@ -63,6 +105,7 @@ const handleSubmit = async () => {
               v-model="password"
               type="password"
               required
+              @input="handleInput"
               class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Password"
             />
@@ -88,11 +131,6 @@ const handleSubmit = async () => {
           </button>
         </div>
       </form>
-
-      <!-- Display Error Message if Login Fails -->
-      <p v-if="error" class="mt-2 text-center text-sm text-red-600">
-        {{ error }}
-      </p>
 
       <!-- Sign-Up Prompt for New Users -->
       <p class="text-center text-sm text-gray-600">
