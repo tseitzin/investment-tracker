@@ -67,7 +67,7 @@ const handleInput = () => {
       <!-- Logo and Welcome Message -->
       <div class="text-center">
         <!-- <img src="/logo.png" alt="Stock Navigator Logo" class="mx-auto h-12 w-12" /> -->
-        <h2 class="text-2xl font-semibold text-gray-900 mt-4">Login to Investment Tracker Pro</h2>
+        <h2 class="text-2xl font-semibold text-gray-900 mt-4">Login to Track My Investments</h2>
         <p class="text-sm text-gray-600 mt-2">
           Discover insights, stay informed, and make smarter investment decisions.
         </p>
