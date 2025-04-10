@@ -170,6 +170,8 @@ interface NavTile {
 
 <style scoped>
 input[type="number"] {
+  appearance: textfield;
+  -webkit-appearance: textfield;
   -moz-appearance: textfield;
 }
 input[type="number"]::-webkit-outer-spin-button,
