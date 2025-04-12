@@ -277,4 +277,8 @@ onUnmounted(() => {
   color: #a0c676;
   background-color: rgba(160, 198, 118, 0.1);
 }
+
+#admin-dropdown {
+  z-index: 50;
+}
 </style>

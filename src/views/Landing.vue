@@ -21,10 +21,7 @@
           <div class="flex justify-center mt-4">
             <div class="w-16 h-1 rounded-full bg-indigo-500 inline-flex"></div>
           </div>
-        </div>
-
-        <!-- Quick Stats Section -->
-        
+        </div>        
       </div>
 
       <!-- Navigation Grid -->
@@ -176,7 +173,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import NavigationTile from '../components/NavigationTile.vue'
+//import NavigationTile from '../components/NavigationTile.vue'
 import { stockService } from '../services/stockService';
 import { cryptoService } from '../services/cryptoService';
 import api from '../api/axios';
